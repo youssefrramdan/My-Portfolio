@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import "./theme.css";
+
+@layer base {
+  :root {
+    /* Replaced at runtime by the same arrow in the saved brand color (lib/brandColor.js). */
+    --cursor-arrow: url("/cursors/arrow.svg");
+  }
+
+  html {
+    @apply motion-safe:scroll-smooth;
+    /* Allowed exception: global custom cursor (Figma-style arrow) with a keyword fallback. */
+    cursor: var(--cursor-arrow) 3 2, auto;
+  }
+
+  body {
+    @apply bg-bg-primary font-primary-en text-base text-text-primary antialiased;
+  }
+
+  a[href],
+  button:not(:disabled) {
+    cursor: var(--cursor-arrow) 3 2, pointer;
+  }
+}
+
+/* Thin, quiet scrollbar for inner scroll areas (dashboard panels, dialogs). */
+@utility scrollbar-soft {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--color-neutral-icon-muted) 30%, transparent) transparent;
+  overscroll-behavior: contain;
+}

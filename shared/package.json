@@ -1,0 +1,6 @@
+{
+  "name": "shared",
+  "private": true,
+  "type": "module",
+  "description": "Constants used by both the server validators and the client forms (single source of truth)."
+}

@@ -1,0 +1,73 @@
+---
+description: Project stack, structure, conventions and working rules for the portfolio monorepo
+alwaysApply: true
+---
+
+# Portfolio project rules
+
+## Stack and structure
+
+- npm workspaces monorepo: `server/` (Node.js, Express 5, MongoDB/Mongoose, express-validator, winston, Cloudinary; Zod only for env validation) and `client/` (React + Vite, JavaScript, Tailwind CSS v4, TanStack Query, React Router, React Hook Form + Zod, Framer Motion).
+- Feature-based modules on both sides:
+  - `server/src/modules/<section>/` holds `<section>.model.js`, `<section>.validator.js`, `<section>.controller.js`, `<section>.routes.js`.
+  - `client/src/features/<section>/` holds the public section (components + its query hook). `client/src/admin/` holds the dashboard (lazy-loaded on `/admin`).
+- Shared code: `server/src/{config,middleware,utils}`, `client/src/{components,lib}`.
+- Values both sides must agree on (validation limits, field names) live once in the root `shared/` folder (ES modules, no dependencies). The server imports them relatively, the client through the `@shared` alias. Example: `shared/testimonials.js` (testimonial max lengths, honeypot field name, `status` / `source` enums).
+- JavaScript only. No TypeScript, no Redux, no plain CSS files.
+
+## Backend
+
+- Controllers are thin. No business logic in route files; routes only wire middleware + controller.
+- All input is validated with express-validator: each route gets a validator array from `<section>.validator.js` whose LAST item is the `validate` middleware, e.g. `export const createSkillValidator = [check('name').trim().notEmpty().withMessage('...'), validate];`. Read sanitized query values with `matchedData(req)` (Express 5 `req.query` is read-only).
+- Unified response format: `{ success, data, message }`. Send success responses with `sendSuccess` from `utils/apiResponse.js`.
+- Errors: throw/forward `new ApiError(message, statusCode)` (or helpers like `ApiError.notFound()`) for expected errors. All errors go through the single `errorHandler`, which hides non-operational error details in production. Wrap async handlers with `asyncHandler`.
+- Logging: use `logger` from `config/logger.js` (winston). Never use `console.*` in server code.
+- No generic controller factories. Each module writes its own explicit controllers (e.g. `getHero`, `updateHero`) so the code reads top to bottom.
+- Field names describe what the content is on the page (`role`, `photo`, `skillTags`), not how it is drawn (`inlineImagesA`, `floatingTags`). Animation timing, icons fixed by the design, and section ids stay in the frontend.
+- Read config only from `config/env.js` (Zod-validated). Never read `process.env` elsewhere.
+- Admin routes live under `/api/admin/*` and always use `requireAuth`. Auth routes are `/api/auth/*`. Public routes stay read-only (except rate-limited visitor submissions).
+
+## Frontend
+
+- Each feature has its own TanStack Query hook (e.g. `useHero`) in its feature folder.
+- Components never call axios directly. Only hooks use the shared instance from `@/lib/axios`.
+- Always import with the `@` alias (`@/lib/utils`, `@/features/hero/...`). No deep relative imports.
+- Merge classes with `cn()` from `@/lib/utils`.
+- The admin (`client/src/admin`) is lazy-loaded so visitors never download it. It has its own axios instance (`withCredentials`, 401 redirects to `/admin/login`) and reuses `components/ui` and the `theme.css` tokens. No new colors without asking the user first.
+- The public Home renders its sections from the PageLayout data (`/api/page`: ordered visible keys, a component map keyed by section key). Navbar / Footer links whose section is not rendered are filtered out.
+
+## Naming
+
+- camelCase for JS files (`queryClient.js`, `asyncHandler.js`), PascalCase for React components (`SectionTitle.jsx`).
+- Server module files: `*.model.js`, `*.validator.js`, `*.controller.js`, `*.routes.js`.
+
+## Content
+
+- NEVER hardcode text, images, or numbers in the frontend. Everything (copy, labels, links, stats, images) comes from the API and is managed in the Admin Dashboard.
+- Documented exceptions (frontend text):
+  - The default navbar labels and the "Download CV" label (section ids live in `@/lib/sections`). Renamed labels come from `GET /api/page` `navLabels` (Page screen); `useNavLinks` applies them. The CV file itself is `settings.cv.url` (uploaded in Identity). The footer reuses the same links; only its copyright and Back Up label come from `settings.footer`.
+  - Social platform names and brand glyphs (`features/contact/socialPlatforms.js`, inline SVGs exported from Figma). Which platforms show, their URLs and order come from `settings.socials`.
+  - Education: the "GRADUATED" label and the "—" shown for an empty certificate detail, in `features/education/labels.js`. The card pill is `credential.label` (empty = `DEFAULT_EDUCATION_LABEL` "🎓 Degree" in `shared/credentials.js`). Certificate row numbers (01, 02...) come from the display order.
+- Education: every published `kind: 'education'` credential is one row (`GET /api/education` `educations[]`, each `{ _id, label, degreeTitle, institution, subjects, graduationYear, graduationDescription, image | null }`); the other kinds are `certificates`. A row with `image` is one wide `DegreeCard` with the photo on the right (Figma 631:16826, the ITI diploma); without it, `DegreeCard` (2/3) + `GraduationCard` (1/3). Label and photo are edited in the Credentials editor (Education card, `ImageField`).
+- Brand color: `settings.brandColor` (hex, default `DEFAULT_BRAND_COLOR` in `shared/settings.js`, edited in Settings > General) recolors the whole site and dashboard at runtime. `app/BrandColor.jsx` calls `applyBrandColor` (`lib/brandColor.js`), which sets `--color-brand-color`, `--color-on-brand` (dark or light text on brand fills, `isLightColor`) and `--cursor-arrow` (the cursor SVG as a data URI) on `<html>` and caches them in localStorage; the inline script in `client/index.html` applies the cache before the first paint. Text on brand fills uses `text-on-brand`, never a fixed dark color. Decorative raster images that must follow the brand use `components/ui/BrandTint` (grayscale image + `mix-blend-color` brand layer); vector decor uses `currentColor` / `bg-brand-color`.
+- Cloudinary: one account can host several portfolios; every upload (dashboard media + seed) goes under `CLOUDINARY_FOLDER` (`<folder>/media`, `<folder>/hero`, ...), so each site only ever lists and deletes its own files.
+  - The testimonial submission form: eyebrow, title, field labels / placeholders, button labels, success text and error messages, all in `features/testimonials/labels.js`. This is fixed UI for visitors, not content. The button that opens it uses `section.ctaButtonLabel` from the API.
+  - Project page chrome: close / back labels, Message, Download CV, loading / not-found text, the fallback image alt and the "All projects" / "View all projects" labels, in `features/projects/labels.js`. The external link button text is `project.linkLabel` (picked from `WORK_LINK_LABELS` in `shared/work.js`).
+  - Admin UI chrome (labels, headings, buttons, empty / error states inside `client/src/admin`) is fixed frontend text, kept in per-page constants files (e.g. `admin/pages/overview/constants.js`), never inline in JSX. The content it edits always comes from the API.
+- Documented exceptions (fixed decorations, drawn by the design, not content):
+  - Testimonials: the quote mark (`features/testimonials/QuoteMark.jsx`, inline SVG), the title squiggle (inline SVG, `currentColor`) and the two side glows (`client/public/decor/testimonials-*`, tinted by `BrandTint`).
+  - Testimonial avatars: the photo when `avatar.url` is set (admin), else the first letter of the name (`components/ui/Avatar.jsx`).
+- The Hero headline is data: `hero.title` split into words, `hero.headline.imageSlots` (max 2, each `{ word, occurrence, images }` with up to 6 images) and `hero.headline.lineBreak` (`{ word, occurrence }` or null) hang after a word; `hero.headline.interval` is the seconds per image (`IMAGE_INTERVAL`, swapped instantly with no animation). Render it with `HeroHeadline`. `hero.photoCursor` (`{ label, color, background }`, Identity > Visuals) is the Figma-style cursor + name tag that follows the mouse over the photo (`PhotoCursor`; hidden when `label` is empty, tag text picks dark / light with `isLightColor`). Anchor rules live in `shared/identity.js` (`titleWords`, `anchorIndex`, `orphanedAnchors`) and are enforced by the server validator.
+- Buttons that come from the API (Hero `ctaPrimary` / `ctaSecondary`, Contact `primaryCta` / `secondaryCta`, Work section `pageButtons`) share one shape: `{ label, action: 'scroll' | 'link' | 'email' | 'whatsapp' | 'cv', target }` (`ctaSchema` in `server/src/utils/schemas.js`, `ctaRules(field)` in `utils/validators.js`, which also accepts `list.*`). Only `scroll` and `link` keep a target; the server clears it for the others. `scroll` = section id, `link` = URL with `https://` added, `email` = opens a Gmail compose window to `settings.contactEmail`, `whatsapp` = opens `wa.me/<digits>` of `settings.whatsapp` (both set on the admin Contact page; `whatsappUrl` in `shared/identity.js`), `cv` = opens `settings.cv.url` in a new tab and also saves it to the device (`cvLinkProps` in `lib/download.js`, blob download) (no target). Render them with `CtaButton` (`components/ui`) and pass `context={ctaContext(settings)}` (`lib/cta.js`); it hides itself when there is nothing to point at (missing CTA, empty target, no email, no CV). `primary` / `secondary` describe the order of the buttons, not their color.
+- Social links: `SocialLink` collection (unique `platform` from `shared/contact.js`, normalized `url`, `order`, `isActive`, max 8). Edited only from the admin Contact page (`PUT /api/admin/contact` replaces the whole list in order). The setup checklist needs `contactEmail` + at least `MIN_SOCIALS` (2) links.
+- SEO: head tags come from `GET /api/seo?path=` and are rendered by `shared/seo.js` into the `<!--seo-head-->` block of `client/index.html` (every tag has `data-seo`; the client swaps them per route). Dev: a Vite plugin injects them (skips `/admin`). Production: Vercel Routing Middleware (`client/middleware.js`) injects them for `/`, `/projects` and `/projects/:slug`, and falls back to the plain page if the API fails.
+- Hosting: one Vercel project (root `client`) serves the site and the API. `client/api/index.js` is a Vercel Function that runs the Express app from `server/` (cached MongoDB connection); `client/vercel.json` rewrites `/api/*`, `/sitemap.xml`, `/robots.txt` to it and installs from the repo root (`cd .. && npm ci`). Server env vars live in the Vercel project; `NODE_ENV` is not set there (production is detected from `VERCEL`), and `CLIENT_URL` defaults to the production domain. Locally `npm run dev` still runs `server/src/server.js`. Absolute URLs (canonical, sitemap, OG) use Settings `siteUrl`, else `CLIENT_URL`. Default favicons (`/favicon.png`, `/favicon.ico`, `/apple-touch-icon.png`) are the round logo.
+- Icons (hero skill tags `{ label, icon, iconNodes }`, capability `glyph { name, nodes }`): picked in the admin `IconPicker` from Hugeicons (`@hugeicons/core-free-icons`, loaded only by the picker). The client sends the name plus the drawing nodes; the server keeps only safe shapes / attributes (`normalizeIcon` in `shared/icons.js`). `components/ui/Icon` draws `nodes` with `HugeiconsIcon`, else an older lucide name.
+- Public submissions (testimonials) are always saved as `pending` / `visitor` on the server; never trust status, source or order sent by the client.
+- Projects (Work): `tags` are plain strings in the database (the public API maps them to `{ label }`). The home shows published + `featured` projects (`GET /api/projects`); `/projects` (`AllProjectsPage`, Figma "All Projects": centered "All Projects" badge, "All " + the section title, the section description, a 1 / 2 / 3 column card grid up to 1280px, then Contact + Footer; its navbar shows the home's links from the page layout (`useHomeNavLinks`) with Projects active, and they open the home scrolled to their section through `state.section` (`useLinkedSection`); the avatar links home) lists every published project (`GET /api/projects?scope=all`) and is reached from the "View all projects" tile at the end of the home row (the row's side arrow scrolls to that tile and hides once the row is at its end). Every card opens `/projects/:slug` and its link text is the project's `cardLabel`, else `section.cardCtaLabel`. Opened from a card, the link state `backdrop` (`'/'` or `'/projects'`) makes the project page an overlay over a blurred backdrop (its Contact + Footer sit on a solid `bg-bg-primary`) while `PublicLayout` keeps that page mounted and inert (`covered`); a direct link renders the standalone page. Public pages handle scroll with `usePageScroll(key)` (top on push, saved position on back), not `ScrollRestoration`. Both use `ProjectDetails` (title, summary, a year · role · client + tags row, then `ProjectGallery`) and the `ProjectActions` bar: the Work section's `pageButtons` (max `MAX_PAGE_BUTTONS` = 3, default `DEFAULT_PAGE_BUTTONS`, edited in Work > Main details, returned by `GET /api/projects/:slug`), the first one green, then the project's own external link. Gallery images are `{ url, publicId, alt, layout: 'full' | 'half' }`; rows come from `galleryRows()` in `shared/work.js` (two halves pair up, a lone half fills its row). The slug is set on the first publish and never changes.
+
+## Way of working
+
+- Work one phase / one section at a time (see `PLAN.md`). Tick items in `PLAN.md` when done.
+- Do not touch files unrelated to the current task.
+- Do not install packages that were not requested without explaining why first.

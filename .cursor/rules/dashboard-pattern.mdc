@@ -1,0 +1,70 @@
+---
+description: Pattern for building every site section end-to-end (server module + admin page + public feature)
+globs: client/src/admin/**, server/src/modules/**
+alwaysApply: false
+---
+
+# Dashboard pattern
+
+## One section = three parts
+
+1. Server module in `server/src/modules/<section>/`: `<section>.model.js` + `<section>.validator.js` (express-validator arrays ending with `validate`, e.g. `createXValidator`, `updateXValidator`, `xIdParamValidator`) + `<section>.controller.js` + `<section>.routes.js`, mounted in `server/src/routes.js`.
+2. Admin page in `client/src/admin/pages/` to manage the content.
+3. Public feature in `client/src/features/<section>/` with its query hook.
+
+## Controllers
+
+- Written by hand per module, no factories.
+- Singletons (Hero, Settings): `getX` (`findOne`) and `updateX` (`findOneAndUpdate` with upsert).
+- Collections (Skills, Projects, Education, Testimonials, ...): `listX`, `getX`, `createX`, `updateX`, `deleteX`.
+
+## Data shape
+
+- Lists inside a document (e.g. `hero.skillTags`, `skillCategory.items`, `credential.subjects`, `project.tags`) are plain string arrays: array order is the display order, no `order` / `isActive` / `_id`. The public `/api/education` still returns subjects as `{ label }`.
+- Content collections (Projects, SkillCategory, Credential, Testimonial) have `order` and a `status` with the per-item draft (see Draft and publish); only `published` items are public. `SocialLink` keeps `order` + `isActive` and is replaced as a whole list by the Contact page.
+- Single-document sections (`*Section`, Settings, Hero) are updated with `findOneAndUpdate({}, ..., SINGLETON_UPDATE)` inside each module's service. No generic singleton helper or factory.
+- Images are always stored as `{ url, publicId, alt }` (Cloudinary `secure_url` + `public_id`).
+
+## Admin UI
+
+- Reuse the shared admin components in `client/src/admin/components`. Do not duplicate form code:
+  - `FormField` (label, required / optional, hint, error, counter; render-prop gives the aria ids) + `TextInput` / `TextArea` / `SelectInput`. The `components/ui` `Field` is the public-site style; admin forms use `FormField`.
+  - `Switch`, `SortableList` + `SortableRow` / `SortableTile` (dnd-kit, keyboard + screen reader announcements; `renderOverlay` = lifted copy in a `DragOverlay`, `dragAnywhere` = mouse drag from the whole tile, `live` = reorder while dragging with Framer layout animations, for grids whose tiles have different sizes), `Popover` + `PopoverItem`, `ConfirmDialog`, `SectionCard` (`icon`, `description`), `ErrorState`, `Skeleton`. Sortable announcement copy is `REORDER_LABELS` (`admin/lib/reorder.js`).
+  - `MediaPickerDialog` (choose from the media library or upload; `kind` image | file, `multiple`, `max`) wraps `components/media/MediaBrowser` (folders, search, grid, upload, move; footer buttons via `renderActions({ selected, clearSelection, setNotice })`), which the Media page also uses; and `useFilePicker` / `useUploadMedia` / `useMedia` (`admin/hooks/useMedia.js`) for uploads (`useFilePicker({ multiple, max })` uploads many files one after another and calls `onUploaded(items)` once; read current form values with `getValues` there).
+  - `IconPicker` (`admin/components/IconPicker.jsx`, copy `ICON_PICKER_COPY` in `admin/lib/iconPicker.js`): searchable Hugeicons grid, `onChange({ name, nodes })`. Picker / upload copy and the library-to-content mappers (`libraryImage`, `libraryFile`) are in `admin/lib/media.js`.
+  - Content library tiles and counts (`CONTENT_TILES`, `tileCount`) and the module paths are in `admin/lib/contentLibrary.js`, shared by Overview and the Content page.
+  - Settings > General also holds the site-wide brand color (`BrandCard`: shared `ColorInput`, reset to `DEFAULT_BRAND_COLOR`, live preview); it saves with the rest of General and the site picks it up from `GET /api/settings`.
+  - Draft-item modules (Capabilities, Credentials, Testimonials) share `components/content/*`: `LibraryHeader`, `MainDetailsCard` (section heading with highlight word chips + `extras`), `StatusBadge`, `LetterTile`, `ImageField`, `ContentEditorFrame` + `EDITOR_GRID`, `ContentEditorHeader` (+ `SaveState`), `ContentStatusCard`, `ContentDeleteCard`, `EditorHint`; copy builders `listCopy` / `editorCopy` / `mainDetailsCopy` in `admin/lib/contentItems.js`. Work keeps its own versions.
+  - Buttons: `CtaEditor` + `CTA_COPY` / `ctaSchema` (`admin/lib/cta.js`), used by Identity, Contact and the Work section's project page buttons (`PageButtons` in `SectionHeadingCard`, a `useFieldArray` with names like `pageButtons.0`; errors are read through the nested path). Pass `sections`, `contactEmail`, `whatsapp` and `hasCv` (from `useContactState`) so it can warn when an action has nothing to point at. Chips: `TagInput`. Section stack: `SectionStack` (`detailed` on the Page screen).
+  - Hooks stay explicit per module (`useCapabilities`, `useCredentials`, `useTestimonialsAdmin`, `useContactAdmin`, `usePageLayout`), each refreshing its public query key and the overview.
+- Forms use React Hook Form + `zodResolver` on the client, mirroring the rules in the server `<section>.validator.js`. Show server field errors from the error response `data` (`[{ field, message }]`). Limits / rules used on both sides live in `shared/` (`@shared/...` on the client, a relative import on the server).
+
+## Media library and uploads
+
+- Uploads never pass through the API (Vercel caps request bodies at 4.5 MB): `useUploadMedia` calls `POST /api/admin/media/sign` `{ name, type, size, folder? }` (type / size / folder checked first; images up to 5 MB, PDF up to 10 MB), posts the file from the browser straight to Cloudinary with those signed fields (`portfolio/media`, PDF as `raw`, one exact `public_id`), then `POST /api/admin/media` `{ publicId, kind, name, folder? }` checks the stored file (real size; Cloudinary-parsed image format; `%PDF-` read through a signed API download) and saves the `Media` document, or removes the file from Cloudinary. `GET /api/admin/media?kind=&search=` lists it.
+- Content stores a copy `{ url, publicId, alt }` (files: `{ url, publicId, name, bytes }`). Replacing or removing an image in content never deletes the asset; it stays in the library.
+- Deleting happens only on `/admin/media`: `DELETE /api/admin/media` `{ ids }`. `findUsage` (`mediaUsage.service.js`) searches every content collection for the `publicId`; if any file is used, the API returns 409 with `data: [{ id, name, usedIn }]` and deletes nothing. A new collection holding media needs a label in its `PLACES` map.
+- Folders (`MediaFolder`, rules in `shared/media.js`): nested up to 3 levels, sibling names unique ignoring case, an item sits in one folder or none (Unsorted, `folder: null`). `GET/POST /api/admin/media/folders`, `PATCH /folders/:id` (rename / move, never into itself or too deep), `DELETE /folders/:id` (items and subfolders move up to the parent, clashing names get a number), `PUT /api/admin/media/move`. The list takes `folder=all|none|<id>`; searching a folder includes its subfolders. Uploads send `folder` before `file` in the form data.
+## Scrolling (admin)
+
+- One scroll area per panel. Inner scroll areas use the `scrollbar-soft` utility (`styles/index.css`). Dialogs keep a fixed height and only their content list scrolls; sticky side panels pin one card instead of scrolling the whole column.
+
+## Draft and publish (Identity)
+
+- Identity (hero + `settings.avatar` / `settings.cv`) edits autosave to an `IdentityDraft` (`PUT /api/admin/identity`, draft may be incomplete). `POST /publish` copies it to Hero / Settings after `publishProblems()` (from `shared/identity.js`) passes; `POST /discard` drops it. `GET` returns `{ identity, changes, hasDraft, ... }` where `changes` lists the fields that differ from the live version.
+- Per item (Work, Capabilities, Credentials, Testimonials): the top-level fields are the live version, `draft` holds the working copy. `PUT /api/admin/<module>/:id` saves the draft (dropped when it equals live); `POST /:id/publish` (blocked by the module's `*PublishProblems()` in `shared/`, problems returned as `data: [{ field, message }]`), `/unpublish`, `/discard`. Admin responses are `{ _id, content, status, isLive, wasPublished, hasDraft, changes, order, publishedAt, updatedAt }` (Work: `work` instead of `content`, plus `slug`; Testimonials add `source`).
+- Testimonials: visitor submissions are `pending` (content in `draft`, `source: 'visitor'`), approve = publish, reject = delete. Capabilities: at most `MAX_PUBLISHED_GROUPS` (4) published.
+- Contact and section headings ("Main Details") have no draft: they save straight to the site (Contact autosaves, headings use a Save button).
+- Autosave forms use the generic `useAutosave({ form, schema, toPayload, save, isBlocked, leaveWarning })` (`admin/hooks/useAutosave.js`): debounced, one request at a time, leave warning, `markSaved` after a reset.
+- The topbar Publish button is only the site on / off switch; content goes live from its own page.
+
+## Admin chrome
+
+- Labels, headings, button text and empty / error copy of an admin page live in that page's constants file, not inline in JSX (documented exception to the no-hardcoded-text rule).
+- Reuse `components/ui` (Button, Input, Field, Modal, Badge, ...) and `theme.css` tokens. No new colors without asking the user.
+
+## Security
+
+- Admin routes live under `/api/admin/*` and use `requireAuth` (reads the JWT from the httpOnly cookie, loads the user, else 401). `optionalAuth` sets `req.user` when the cookie is valid and never throws.
+- All write routes (POST, PUT, PATCH, DELETE) are admin routes. Public routes are read-only (except contact/testimonial submission, which are rate-limited).
+- The API runs as a Vercel Function (many instances), so security limits (login, account, contact, testimonial) are `shared: true` in `middleware/rateLimit.js` and count in MongoDB (`MongoRateLimitStore`, TTL-expired counters). The broad `apiLimiter` / `adminLimiter` stay in memory. Nothing may rely on in-process state surviving between requests.

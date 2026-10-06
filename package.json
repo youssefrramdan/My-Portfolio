@@ -1,0 +1,25 @@
+{
+  "name": "youssef-portfolio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Dynamic one-page portfolio with an admin dashboard (Express + MongoDB + React + Tailwind v4).",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n server,client -c green,cyan \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "build": "npm run build -w client",
+    "start": "npm run start -w server",
+    "seed": "npm run seed -w server --",
+    "seed:admin": "npm run seed:admin -w server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

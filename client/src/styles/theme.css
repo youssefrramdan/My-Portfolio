@@ -1,0 +1,272 @@
+/*
+ * Design tokens generated from the Figma file "MUHAMED-Portfolio" (variable collections:
+ * Colors, Fonts, Responsive), "Portfolio – Yousef Ramadan" frame (616:13834, teal brand).
+ * Do not add values that do not exist in Figma.
+ * Responsive values: the base is the "iPhone / Android" mode, overridden below at
+ * tablet ("iPad / Android Tab") and desktop ("Web / Laptop"). Comments show Figma px.
+ */
+
+/* Figma collection: Colors / Base (primitives) */
+@theme static {
+  --color-*: initial;
+
+  --color-neutral: #ffffff;
+  /* Default only: Settings > General overrides it at runtime (lib/brandColor.js), with --color-on-brand. */
+  --color-brand-color: #35d0ba;
+  --color-on-brand: var(--color-neutral-surface-black); /* text / icons on brand fills */
+  --color-neutral-brand-white: #e5e5e5;
+  --color-neutral-surface-black: #161816;
+  --color-neutral-gray: #b6b6b6;
+  --color-overlay-dark-40: #16181666;
+  --color-overlay-gray-60: #b6b6b699;
+  --color-overlay-black-50: #3e3e3e80;
+  --color-neutral-black-deep: #161816;
+  --color-neutral-surface-1: #262726;
+  --color-neutral-surface-2: #2a2a2a;
+  --color-brand-color-dim: #3e3e3e;
+
+  /* TODO: restored from DELETED Figma variables still referenced by Brand Colors aliases.
+     Remove once Figma re-creates them (or re-points the aliases). */
+  --color-neutral-surface-3: #292b2b;
+  --color-neutral-gray-dark: #2a2a2a;
+
+  /* TODO: used in the Hero frame as raw fills, not Figma variables (approved additions).
+     Re-point once Figma adds variables for them. */
+  --color-neutral-surface-0: #1c1e1f; /* tag icon circle, stat label pill (at /50), skill cards (Figma #1c1e1c) */
+  --color-neutral-surface-section: #191b19; /* Tools & Methods section background + chips */
+
+  /* TODO: raw fills of the "Leave Your Testimonial" modal (Figma 505:4936), not Figma variables (approved additions). */
+  --color-neutral-surface-input: #252825; /* form inputs */
+  --color-neutral-surface-control: #292c29; /* modal close button, Cancel button */
+  --color-neutral-text-heading: #efefef; /* modal title */
+  --color-neutral-text-label: #8c908c; /* form labels */
+  --color-neutral-text-placeholder: #5f635f; /* input placeholders */
+  --color-neutral-text-muted: #c3c6c3; /* Cancel label */
+  --color-neutral-icon-muted: #a7aba7; /* modal close icon */
+
+  /* TODO: form error color, not in Figma (approved addition). */
+  --color-status-error: #ff6b6b;
+
+  /* TODO: raw fills of the admin Dashboard frames (Figma 538:7348), not Figma variables (approved additions). */
+  --color-neutral-surface-raised: #202320; /* tiles, stack rows, checklist items, quick actions, Preview button */
+  --color-status-warning: #f0ae52; /* draft dot, "visible but empty" section warning */
+}
+
+/* Figma collection: Colors / Brand Colors (semantic aliases) */
+@theme inline {
+  --color-bg-primary: var(--color-neutral-surface-black);
+  --color-card-primary: var(--color-neutral-surface-1);
+  --color-surface-secondary: var(--color-neutral-surface-black);
+  --color-surface-secondary-hover: var(--color-neutral-surface-3);
+  --color-border-primary: var(--color-neutral-gray-dark);
+  --color-border-secondary: var(--color-neutral-surface-3);
+  --color-border-tertiary: var(--color-overlay-dark-40);
+  --color-icon-primary: var(--color-neutral-brand-white);
+  --color-icon-secondary: var(--color-neutral-gray);
+  --color-icon-hover: var(--color-brand-color);
+  --color-overlay-default: var(--color-overlay-black-50);
+  --color-fill-primary: var(--color-brand-color);
+  --color-fill-primary-active: var(--color-brand-color-dim);
+  --color-text-primary: var(--color-neutral-brand-white);
+  --color-text-secondary: var(--color-neutral-gray);
+  --color-text-disabled: var(--color-overlay-gray-60);
+  --color-text-brand: var(--color-brand-color);
+}
+
+@theme static {
+  /* Figma collection: Fonts / Font Family */
+  --font-primary-en: "Montserrat Variable", "Montserrat", sans-serif;
+  --default-font-family: var(--font-primary-en);
+
+  /* Figma collection: Fonts / Weight */
+  --font-weight-*: initial;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semi-bold: 600;
+  --font-weight-bold: 700;
+  --font-weight-black: 900;
+
+  /* Figma collection: Fonts / Line Height (iPhone / Android) */
+  --leading-*: initial;
+  --leading-h1: 2.5rem; /* 40 */
+  --leading-h2: 2.5rem; /* 40 */
+  --leading-h3: 2rem; /* 32 */
+  --leading-h4: 2rem; /* 32 */
+  --leading-h5: 1.5rem; /* 24 */
+  --leading-h6: 1.5rem; /* 24 */
+  --leading-xl: 1.5rem; /* 24 */
+  --leading-l: 1.5rem; /* 24 */
+  --leading-b: 1.5rem; /* 24 */
+  --leading-s: 1rem; /* 16 */
+  --leading-xs: 1rem; /* 16 */
+
+  /* Figma collection: Fonts / Font Size (iPhone / Android), paired with its Line Height */
+  --text-*: initial;
+  --text-h1: 2rem; /* 32 */
+  --text-h1--line-height: var(--leading-h1);
+  --text-h2: 2rem; /* 32 */
+  --text-h2--line-height: var(--leading-h2);
+  --text-h3: 1.5rem; /* 24 */
+  --text-h3--line-height: var(--leading-h3);
+  --text-h4: 1.5rem; /* 24 */
+  --text-h4--line-height: var(--leading-h4);
+  --text-h5: 1.25rem; /* 20 */
+  --text-h5--line-height: var(--leading-h5);
+  --text-h6: 1.25rem; /* 20 */
+  --text-h6--line-height: var(--leading-h6);
+  --text-extra-large: 1.125rem; /* 18 */
+  --text-extra-large--line-height: var(--leading-xl);
+  --text-large: 1rem; /* 16 */
+  --text-large--line-height: var(--leading-l);
+  --text-base: 0.875rem; /* 14 */
+  --text-base--line-height: var(--leading-b);
+  --text-small: 0.75rem; /* 12 */
+  --text-small--line-height: var(--leading-s);
+  --text-extra-small: 0.625rem; /* 10 */
+  --text-extra-small--line-height: var(--leading-xs);
+
+  /* TODO: Hero background name, not a Figma variable (approved addition). */
+  --text-display: 3.5rem; /* 56 */
+  --text-display--line-height: 0.95;
+
+  /* TODO: Education graduation year (Figma raw 128px Black, line height 72), not a Figma variable (approved addition). */
+  --text-year: 4rem; /* 64 */
+  --text-year--line-height: 0.5625; /* 72 / 128, as in Figma */
+
+  /* TODO: glass blur of Hero cards/tags/navbar, not a Figma variable (approved addition). */
+  --blur-glass: 7.5px;
+
+  /* Figma collection: Responsive / Spacong (iPhone / Android) */
+  --spacing-space-1: 0.25rem; /* 4 */
+  --spacing-space-2: 0.5rem; /* 8 */
+  --spacing-space-3: 1rem; /* 16 */
+  --spacing-space-4: 1.5rem; /* 24 */
+  --spacing-space-5: 2rem; /* 32 */
+
+  /* Figma collection: Responsive / Grid (iPhone / Android) */
+  --grid-template-columns-layout: repeat(4, minmax(0, 1fr)); /* columns-number 4 */
+  --spacing-grid-margin: 1rem; /* 16 */
+  --spacing-grid-gutter: 1rem; /* 16 */
+
+  /* Figma collection: Responsive / Radius (iPhone / Android) */
+  --radius-*: initial;
+  --radius-none: 0rem; /* 0 */
+  --radius-xs: 0.25rem; /* 4 */
+  --radius-sm: 0.5rem; /* 8 */
+  --radius-md: 0.5rem; /* 8 */
+  --radius-lg: 1rem; /* 16 */
+  --radius-xl: 1rem; /* 16 */
+  --radius-full: 9999px; /* 9999 */
+  /* TODO(figma): fixed Web radius kept on every screen (approved). Cards in Tools & Methods / Education, icon tile. */
+  --radius-card: 2rem; /* 32 */
+  --radius-tile: 1rem; /* 16 */
+
+  /* Figma collection: Responsive / breakpoint (iPad 768, Web 1440; iPhone 390 is the base) */
+  --breakpoint-tablet: 48rem; /* 768 */
+  --breakpoint-desktop: 90rem; /* 1440 */
+}
+
+/* Motion keyframes (allowed exception to "no custom CSS"). Easing = lib/motion.js EASE. */
+@theme {
+  --animate-hue-shift: hue-shift 6s cubic-bezier(0.36, 0.01, 0.07, 1) infinite alternate;
+
+  @keyframes hue-shift {
+    from {
+      filter: hue-rotate(0deg);
+    }
+    to {
+      filter: hue-rotate(80deg);
+    }
+  }
+}
+
+/* Figma collections: Fonts + Responsive, per-mode overrides */
+@layer base {
+  :root {
+    /* iPad / Android Tab */
+    @variant tablet {
+      --leading-h1: 3.5rem; /* 56 */
+      --leading-h2: 3rem; /* 48 */
+      --leading-h3: 2.5rem; /* 40 */
+      --leading-h4: 2.5rem; /* 40 */
+      --leading-h5: 2rem; /* 32 */
+      --leading-h6: 1.5rem; /* 24 */
+      --leading-xl: 1.5rem; /* 24 */
+      --leading-l: 1.5rem; /* 24 */
+      --leading-b: 1.5rem; /* 24 */
+      --leading-s: 1.5rem; /* 24 */
+      --leading-xs: 1rem; /* 16 */
+
+      --text-h1: 3rem; /* 48 */
+      --text-h2: 2.5rem; /* 40 */
+      --text-h3: 2rem; /* 32 */
+      --text-h4: 2rem; /* 32 */
+      --text-h5: 1.5rem; /* 24 */
+      --text-h6: 1.25rem; /* 20 */
+      --text-extra-large: 1.125rem; /* 18 */
+      --text-large: 1rem; /* 16 */
+      --text-base: 1rem; /* 16 */
+      --text-small: 0.875rem; /* 14 */
+      --text-extra-small: 0.75rem; /* 12 */
+      --text-display: 6rem; /* 96 (interpolated, no tablet frame) */
+      --text-year: 6rem; /* 96 (interpolated, no tablet frame) */
+
+      --spacing-space-1: 0.5rem; /* 8 */
+      --spacing-space-2: 1rem; /* 16 */
+      --spacing-space-3: 1.5rem; /* 24 */
+      --spacing-space-4: 2rem; /* 32 */
+      --spacing-space-5: 2.5rem; /* 40 */
+
+      --grid-template-columns-layout: repeat(8, minmax(0, 1fr)); /* columns-number 8 */
+      --spacing-grid-margin: 1.5rem; /* 24 */
+      --spacing-grid-gutter: 1.5rem; /* 24 */
+
+      --radius-md: 0.75rem; /* 12 */
+      --radius-lg: 1rem; /* 16 */
+      --radius-xl: 1.5rem; /* 24 */
+    }
+
+    /* Web / Laptop */
+    @variant desktop {
+      --leading-h1: 4.5rem; /* 72 */
+      --leading-h2: 4rem; /* 64 */
+      --leading-h3: 3.5rem; /* 56 */
+      --leading-h4: 3rem; /* 48 */
+      --leading-h5: 2.5rem; /* 40 */
+      --leading-h6: 2rem; /* 32 */
+      --leading-xl: 2rem; /* 32 */
+      --leading-l: 2rem; /* 32 */
+      --leading-b: 1.5rem; /* 24 */
+      --leading-s: 1.5rem; /* 24 */
+      --leading-xs: 1rem; /* 16 */
+
+      --text-h1: 4rem; /* 64 */
+      --text-h2: 3.5rem; /* 56 */
+      --text-h3: 3rem; /* 48 */
+      --text-h4: 2.5rem; /* 40 */
+      --text-h5: 2rem; /* 32 */
+      --text-h6: 1.5rem; /* 24 */
+      --text-extra-large: 1.375rem; /* 22 */
+      --text-large: 1.25rem; /* 20 */
+      --text-base: 1rem; /* 16 */
+      --text-small: 0.875rem; /* 14 */
+      --text-extra-small: 0.75rem; /* 12 */
+      --text-display: 8.625rem; /* 138 */
+      --text-year: 8rem; /* 128 */
+
+      --spacing-space-1: 0.5rem; /* 8 */
+      --spacing-space-2: 1rem; /* 16 */
+      --spacing-space-3: 1.5rem; /* 24 */
+      --spacing-space-4: 2rem; /* 32 */
+      --spacing-space-5: 2.5rem; /* 40 */
+
+      --grid-template-columns-layout: repeat(12, minmax(0, 1fr)); /* columns-number 12 */
+      --spacing-grid-margin: 5rem; /* 80 */
+      --spacing-grid-gutter: 2rem; /* 32 */
+
+      --radius-md: 1rem; /* 16 */
+      --radius-lg: 1.5rem; /* 24 */
+      --radius-xl: 2rem; /* 32 */
+    }
+  }
+}

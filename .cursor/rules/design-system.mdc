@@ -1,0 +1,75 @@
+---
+description: Design-system rules. Tailwind v4 tokens from Figma only.
+globs: client/src/**
+alwaysApply: true
+---
+
+# Design system rules
+
+Source of truth: Figma file `MUHAMED-Portfolio` (fileKey `FlpQcpy5arYqWOOwk97q1q`), mirrored in `client/src/styles/theme.css`.
+
+## Styling
+
+- Tailwind utility classes only. No custom CSS files, no inline `style={{}}`, no CSS modules.
+- Never use hex/rgb/hsl values, arbitrary values (`bg-[#...]`, `p-[13px]`, `text-[18px]`), or default Tailwind colors (they are removed via `--color-*: initial`).
+- Prefer semantic tokens (Brand Colors) over primitives (Base):
+  - Use `bg-bg-primary`, `bg-card-primary`, `text-text-primary`, `text-text-secondary`, `border-border-primary`, `text-icon-hover`, `bg-fill-primary` ...
+  - The doubled prefix (`bg-bg-*`, `text-text-*`, `border-border-*`) is intentional: token names match Figma exactly.
+- If a needed token is missing, STOP and tell the user to add it in Figma first. Do not invent values.
+- The admin dashboard uses the same tokens and `components/ui` as the public site. No new colors (admin included) without telling the user first.
+- Allowed exceptions to "no custom CSS":
+  - The global custom cursor rule in the `@layer base` of `client/src/styles/index.css` (SVG files in `client/public/cursors/`, always with a keyword fallback).
+  - Keyframes declared inside `theme.css` `@theme` as `--animate-*` tokens (used as `animate-*` utilities).
+- Inline `style` is allowed only for values computed at runtime: Framer Motion values (cursor-follow coordinates, scroll-driven transforms) and measured layout (the Projects stage fit / scroll track), never for static styling.
+- Hiding a scrollbar on a carousel: `[scrollbar-width:none] [&::-webkit-scrollbar]:hidden` (the only arbitrary-property utility allowed).
+- Soft edge fade on a full-bleed strip: Tailwind mask utilities (`mask-x-from-90%`). When the strip is tilted, put the mask on a wrapper with `-my-24 py-24` (and `pointer-events-none`, children `pointer-events-auto`) so the rotated corners are not clipped.
+- Decorative glows / squiggles exported from Figma live in `client/public/decor/` (glows as small JPGs with the section background baked in, drawn with `mix-blend-lighten`).
+
+## Motion
+
+- Use Framer Motion. All durations, distances, delays and easings live in `client/src/lib/motion.js`. No magic numbers in components.
+- Easing everywhere: `cubic-bezier(0.36, 0.01, 0.07, 1)`, i.e. `EASE = [0.36, 0.01, 0.07, 1]` in Framer.
+- Always respect `prefers-reduced-motion` (`useReducedMotion`): no entrance travel, no idle loops, no reels.
+- Sections below the hero: `revealOnScroll` on the section + `useReveal()` variants on children (`custom` = stagger index). Plays once; reduced motion keeps only the fade.
+  - A child that mounts after the reveal played (e.g. only rendered from `tablet:` up) needs its own `{...revealOnScroll}`, otherwise it stays hidden.
+  - Tall sections whose parts stack far apart on mobile (Education) give each group its own `{...revealOnScroll}` so lower cards play when they are reached.
+  - `reveal(offset, { delay, stagger })` delays / spaces nested items (e.g. certificate rows after their card).
+  - Side entrances (`x`) only where items sit side by side; when they stack, switch to a small rise (no horizontal travel on small screens).
+- Dialogs: `Modal` uses `modalVariants(reduce)` / `MODAL` from `motion.js` (backdrop fade, dialog fade + slight scale; reduced motion = fade only; `MODAL.successClose` = seconds before a sent form closes itself).
+- Infinite marquee (Testimonials, `features/testimonials/TestimonialsMarquee.jsx`): the track is copied until it covers the viewport plus one copy (measured with `ResizeObserver`), moved with `useAnimationFrame` + a motion value (transform only) and wrapped by one copy width, so it is seamless for any item count. Speed and frame-delta cap live in `MARQUEE` in `motion.js`. Pauses on hover / focus; extra copies are `aria-hidden`. Reduced motion = one copy in a horizontally scrollable snap row, no auto-scroll.
+- Contact arc (`features/contact/SocialArc.jsx` + `arcLayout.js`): geometry (radius, gap, step, faint rings) lives in `arcLayout.js`; `getArcPositions(count)` spreads 0..8 icons (left `ceil(n/2)`, right `floor(n/2)`, 12° apart, each side centered on 44.3°, API order alternates left / right from the bottom). One `progress` motion value (0 to 1, `CONTACT_MOTION` in `motion.js`) drives the green `pathLength`, the glow dot and each icon pop, so they stay in sync. The arc box sizes / icon positions are computed, so they use inline `style` like other measured layout. Large arc + icons from `xl`; below `xl` a small arc behind the buttons and an icon row.
+- Scroll-driven sequences (Projects Stack -> Row, `features/projects/useStackUnfold.js`): the DOM keeps the final layout and motion values move elements from the start state (transforms and opacity only). Ranges live in `UNFOLD` in `motion.js`.
+
+## Tokens (all from theme.css)
+
+- Font: `font-primary-en` (Montserrat). Weights: `font-regular`, `font-medium`, `font-semi-bold`, `font-bold`, `font-black`.
+- Text sizes (include line-height): `text-h1` to `text-h6`, `text-extra-large`, `text-large`, `text-base`, `text-small`, `text-extra-small`. Line heights alone: `leading-h1` to `leading-h6`, `leading-xl`, `leading-l`, `leading-b`, `leading-s`, `leading-xs`.
+- Spacing: `space-1` to `space-5`, `grid-margin`, `grid-gutter` (e.g. `p-space-3`, `gap-grid-gutter`, `px-grid-margin`).
+- Grid: `grid-cols-layout` (4 / 8 / 12 columns per mode).
+- Radius: `rounded-none`, `rounded-xs`, `rounded-sm`, `rounded-md`, `rounded-lg`, `rounded-xl`, `rounded-full`. Fixed (same on every screen, the Web value): `rounded-card` (32, Tools & Methods / Education cards) and `rounded-tile` (16, skill card icon tile).
+- Approved non-Figma additions (marked TODO in theme.css): `text-display` (Hero background name), `text-year` (Education graduation year, 64 / 96 / 128), `on-brand` (text on brand fills, flipped at runtime with the brand color; the hero stripes use `brand-color/5`), `neutral-surface-0` (stat cards, skill cards), `neutral-surface-section` (Tools & Methods background, chips), `backdrop-blur-glass` / `blur-glass`.
+- Testimonial form colors (raw Figma fills in frame 505:4936, not yet variables): `neutral-surface-input`, `neutral-surface-control` (close / Cancel), `neutral-text-heading`, `neutral-text-label`, `neutral-text-placeholder`, `neutral-text-muted`, `neutral-icon-muted`. `status-error` (soft red) is not in Figma at all; use it only for validation / request errors.
+- Admin dashboard colors (raw fills in the Dashboard frames, approved): `neutral-surface-raised` (secondary buttons, icon tiles on cards), `status-warning` (amber: pending counts, "visible but empty" sections).
+- Breakpoints: mobile-first base, `tablet:` (768px), `desktop:` (1440px). `xl:` (1280px, Tailwind default) is used only where a desktop arrangement must start before 1440 (Tools & Methods tilted row, Projects stack unfold and 3-column grid, inline navbar links; below `xl` they live in the menu). In JS use `useMediaQuery(MEDIA.tablet | MEDIA.xl)` from `lib/useMediaQuery.js`.
+  - Admin only: `lg:` (1024px) switches the drawer to the fixed sidebar (`MEDIA.lg`); `2xl:` (1536px) gives the Overview content row its 3 / 4 split (the Figma frame is 1579 wide).
+
+## Shared UI (`client/src/components/ui`)
+
+- `Badge`: pill with the green lightning circle (section badges, Hero role).
+- `SectionTitle`: `plain` + green `highlight` heading (`h2` by default, `as` to change). `stacked` puts the highlight on its own line (Contact).
+- `CtaButton`: a `Button` driven by an API CTA `{ label, action, target }` through `ctaLink(cta, context)` (`lib/cta.js`): `scroll` = `#id` (smooth scroll), `email` = Gmail compose in a new tab (target or `context.email`), `link` = new tab with `rel="noopener noreferrer"`, `cv` = `context.cvUrl` in a new tab. `context` comes from `ctaContext(settings)`. Returns `null` when there is nothing to point at; other props go to `Button`. Check `ctaLink(cta, context)` before rendering a wrapper so an empty CTA leaves no gap.
+- `Chip`: small rounded label on `neutral-surface-section`; hover = `brand-color` background with `neutral-surface-black` text (Figma Chips Hover variant). `size="sm"` = the tighter project card tags.
+- `Button`: Figma CTA pill (`secondary` / `primary`, shine on hover, optional `icon` / `rotateIcon` / `glow`); `<a>` with `href`, `<button>` otherwise. `shape="rect"` = the form buttons (full width, `rounded-md`, no shine). `loading` disables it and sets `aria-busy`.
+- `Modal`: accessible dialog in a portal (`open`, `onClose`, `labelledBy` = title id). Handles Esc / backdrop close, focus trap, focus to `[data-autofocus]` and back to the trigger, page scroll lock and `inert` background. The caller renders its own close buttons.
+- `Input` / `Textarea` (built on `Field`): label + control + inline error wired with `aria-invalid` / `aria-describedby`; pass react-hook-form's `register()` spread plus `id`, `label`, `error`. `Textarea` takes a `hint` (e.g. a character counter). Shared control classes live in `fieldStyles.js`.
+- `Avatar`: 70px green-tinted circle with the first letter of `name` (grapheme-aware, so Arabic and emoji work), `aria-hidden` (the name is shown next to it).
+- Reuse these instead of re-styling badges, headings, chips, buttons, avatars or form fields inside features.
+
+## Responsive tokens
+
+- Text sizes, line heights, spacing, grid and radius already change per Figma mode (iPhone, iPad, Web) through CSS variables in `theme.css`.
+- Do NOT add `tablet:text-h2 desktop:text-h1`-style overrides to mimic Figma modes. Use the single token (`text-h1`) and it scales automatically. Use breakpoint variants only for real layout changes.
+
+## Before building UI
+
+- Before building any UI section, read its Figma frame through the Figma MCP (screenshot + metadata/variables) and match layout, spacing and tokens.

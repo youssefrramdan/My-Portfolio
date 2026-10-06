@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--seo-head-->
+    <title data-seo>Youssef Ramadan - Backend Software Engineer</title>
+    <meta data-seo name="description" content="Backend software engineer building reliable systems and APIs that scale." />
+    <link data-seo rel="icon" href="/favicon.png" />
+    <link data-seo rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!--/seo-head-->
+    <script>
+      /* Last saved brand color (lib/brandColor.js), applied before the first paint. */
+      try {
+        var saved = JSON.parse(localStorage.getItem('brand-color') || 'null');
+        if (saved && /^#[0-9a-f]{6}$/i.test(saved.brand)) {
+          document.documentElement.style.setProperty('--color-brand-color', saved.brand);
+          document.documentElement.style.setProperty('--color-on-brand', saved.onBrand);
+          if (saved.cursor) document.documentElement.style.setProperty('--cursor-arrow', saved.cursor);
+        }
+      } catch (error) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
