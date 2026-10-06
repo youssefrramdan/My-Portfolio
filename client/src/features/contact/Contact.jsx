@@ -143,7 +143,7 @@ function ContactSection({ section, socials, ctaContext, sectionId, titleId }) {
           <motion.p
             variants={rise}
             custom={ORDER.description}
-            className="mt-4 max-w-241 text-large whitespace-pre-line text-text-secondary"
+            className="mt-4 max-w-241 text-large text-balance whitespace-pre-line text-text-secondary xl:max-w-180"
           >
             {section.description}
           </motion.p>
@@ -183,7 +183,8 @@ function ContactSection({ section, socials, ctaContext, sectionId, titleId }) {
 
 /**
  * Contact section (Figma 184:20913 desktop, 403:12558 mobile). Texts and buttons come from `/api/contact`,
- * socials from settings. From xl the icons sit on a large arc around the text; below xl they form a row
+ * socials from settings. From xl the icons sit on a large arc around the text (the description is capped at 720px
+ * and balanced so long copy wraps inside the arc instead of running under the icons); below xl they form a row
  * under the buttons with a small arc behind. No socials: text and buttons only. No section: nothing.
  * `socials` overrides the settings list (dev preview only). `sectionId` / `titleId` change the ids when a second
  * copy is on the page (the project overlay over the home).
